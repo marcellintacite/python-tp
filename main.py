@@ -1,3 +1,6 @@
+import os
+from tkinter import messagebox
+
 # def convert_gpgga_to_gpgsa(gpgga_sentence):
 #     # Diviser la trame GPGGA en éléments séparés par des virgules
 #     gpgga_parts = gpgga_sentence.split(',')
@@ -124,6 +127,10 @@ def convert():
 
 
 def export_frames():
+    # Vérifie si le fichier existe.
+    if os.path.exists("frames.txt"):
+        # Supprime le fichier.
+        os.remove("frames.txt")
     # Récupère la trame GPGGA saisie par l'utilisateur.
     gpgga_sentence = gga_entry.get()
 
@@ -140,6 +147,11 @@ def export_frames():
     file.write(gsa_sentence)
     file.write(gprmc_sentence)
     file.write(gpgga_sentence)
+    # showing a dialog box
+    messagebox.showinfo(
+        "Confirmation", "Félicitation, fichier enreigistré avec succès!")
+    # Clear the entry box
+    gga_entry.delete(0, tk.END)
 
     # Ferme le fichier texte.
     file.close()
