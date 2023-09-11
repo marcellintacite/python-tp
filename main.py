@@ -126,6 +126,34 @@ def convert():
         # disable
 
 
+#Conversion GPGA en GPGSA
+
+def toGPGSA (trame):
+    g="$GPGSA,A,3"
+    t=trame.split(",")
+    for i in range(1,int(t[7])+1):
+        if(i<=9):
+            g+=",0"+str(i)
+        else :
+            g+=","+str(i)
+    for i in range(0,3):
+        g+=","+str(t[8])
+    return g
+
+GPGSA=toGPGSA(trame1)
+
+
+def CkeckSum(PAR):
+    chaine=PAR
+    m1=PAR.replace(',',"")
+    m2=m1.replace("$","")
+    xor_result=0
+    for char in m2:
+        xor_result^=ord(char)
+    chaine+=",*"+str(xor_result+2)
+    return chaine
+
+
 def export_frames():
     # Vérifie si le fichier existe.
     if os.path.exists("frames.txt"):
