@@ -33,6 +33,40 @@ from tkinter import messagebox
 from datetime import datetime
 import tkinter as tk
 
+# def toGPGSA (trame):
+#     g="$GPGSA,A,3"
+#     t=trame.split(",")
+#     for i in range(1,int(t[7])+1):
+#         if(i<=9):
+#             g+=",0"+str(i)
+#         else :
+#             g+=","+str(i)
+#     for i in range(0,3):
+#         g+=","+str(t[8])
+#     return g
+# trame1=""
+# GPGSA=toGPGSA(trame1)
+
+
+# def CkeckSum(PAR):
+#     chaine=PAR
+#     m1=PAR.replace(',',"")
+#     m2=m1.replace("$","")
+#     xor_result=0
+#     for char in m2:
+#         xor_result^=ord(char)
+#     chaine+=",*"+str(xor_result+2)
+#     return chaine
+import operator
+def ceksum(trame):
+    data = trame[1:-3] # on enlève le $ et le *XX
+    checksum = 0
+    for c in data:
+        checksum = operator.xor(checksum, ord(c)) # on fait le XOR de chaque caractère
+    checksum = hex(checksum)[2:].upper() 
+    FR=checksum# on convertit en hexadécimal et en majuscule
+    checksum=int(checksum,16)
+    return checksum,FR
 
 def convert_gpgga_to_gprmc(gpgga_sentence):
     # Diviser la trame GPGGA en éléments séparés par des virgules
@@ -50,15 +84,15 @@ def convert_gpgga_to_gprmc(gpgga_sentence):
     course = "0.0"  # Valeur par défaut pour le cap (peut être ajustée)
 
     # Créer la trame GPRMC en utilisant les informations extraites
-    gprmc_sentence = f"$GPRMC,{time},A,{lat},{lon},{speed},{course},{gpgga_parts[9]},{gpgga_parts[7]},{gpgga_parts[6]},,{gpgga_parts[13]},*"
+    gprmc_sentence = f"$GPRMC,{time},A,{lat},{lon},{speed},{course},{gpgga_parts[9]},{gpgga_parts[7]},{gpgga_parts[6]},,{gpgga_parts[13]},W*XX"
 
     # Calculer la somme de contrôle (checksum)
-    checksum = 0
-    for char in gprmc_sentence:
-        checksum ^= ord(char)
-
+    h=ceksum(gprmc_sentence)[0]
+    gprmc_sentence=gprmc_sentence[0:-2]
+    
     # Ajouter le checksum à la trame GPRMC
-    gprmc_sentence += f"{checksum:02X}\r\n"
+    
+    gprmc_sentence +=f'{h}'
 
     return gprmc_sentence
 
@@ -85,17 +119,28 @@ def gpgga_to_gsa(gpgga_sentence):
     altitude = fields[9]
 
     # Construct the GSA sentence
-    gsa_sentence = f"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,2.5,1.2,1.8,{altitude},,,,,,1.5,1.2,2.2*"
+    gsa_sentence = f"$GPGSA,A,3,01,02,03,04,05,06,07,08,09,10,11,12,2.5,1.2,1.8,{altitude},,,,,,1.0,1.0,1.0*"
+    
+    g="$GPGSA,A,3"
+    
+    t=gpgga_sentence.split(",")
+    len(t)
+    for i in range(1,int(t[7])+1):
+        if(i<=9):
+            g+=",0"+str(i)
+        else :
+            g+=","+str(i)
+    for i in range(0,3):
+        g+=","+str(t[8])
+    f=g
 
     # Calculate the checksum for the GSA sentence
-    checksum = 0
-    for char in gsa_sentence:
-        checksum ^= ord(char)
-
+    checksum =ceksum(g)[0]
+   
     # Append the checksum to the GSA sentence
-    gsa_sentence += f"{checksum:02X}"
+    f += f"*{checksum}"
 
-    return gsa_sentence
+    return f
 
 
 # Crée la fenêtre principale.
@@ -128,30 +173,30 @@ def convert():
 
 #Conversion GPGA en GPGSA
 
-def toGPGSA (trame):
-    g="$GPGSA,A,3"
-    t=trame.split(",")
-    for i in range(1,int(t[7])+1):
-        if(i<=9):
-            g+=",0"+str(i)
-        else :
-            g+=","+str(i)
-    for i in range(0,3):
-        g+=","+str(t[8])
-    return g
+# def toGPGSA (trame):
+#     g="$GPGSA,A,3"
+#     t=trame.split(",")
+#     for i in range(1,int(t[7])+1):
+#         if(i<=9):
+#             g+=",0"+str(i)
+#         else :
+#             g+=","+str(i)
+#     for i in range(0,3):
+#         g+=","+str(t[8])
+#     return g
+# trame1=""
+# GPGSA=toGPGSA(trame1)
 
-GPGSA=toGPGSA(trame1)
 
-
-def CkeckSum(PAR):
-    chaine=PAR
-    m1=PAR.replace(',',"")
-    m2=m1.replace("$","")
-    xor_result=0
-    for char in m2:
-        xor_result^=ord(char)
-    chaine+=",*"+str(xor_result+2)
-    return chaine
+# def CkeckSum(PAR):
+#     chaine=PAR
+#     m1=PAR.replace(',',"")
+#     m2=m1.replace("$","")
+#     xor_result=0
+#     for char in m2:
+#         xor_result^=ord(char)
+#     chaine+=",*"+str(xor_result+2)
+#     return chaine
 
 
 def export_frames():
@@ -172,9 +217,10 @@ def export_frames():
     file = open("frames.txt", "w")
 
     # Écrit les trames converties dans le fichier texte.
-    file.write(gsa_sentence)
-    file.write(gprmc_sentence)
+    file.write(gsa_sentence+"\n")
+    file.write(gprmc_sentence+"\n")
     file.write(gpgga_sentence)
+    file.close()
     # showing a dialog box
     messagebox.showinfo(
         "Confirmation", "Félicitation, fichier enreigistré avec succès!")
